@@ -67,7 +67,10 @@
 		%end;
 	run;
 
-	data 
+	*Присоединяем полученный вектор;
+	data colony_&n;
+		set colony_&n vec_&n;
+	run;
 %mend;
 
 *----- макросы готовы -----;
@@ -95,11 +98,7 @@ data vec_1;
 	;
 run;
 
-/*------------------------------------------------------*/
-*---- инициализация данных ----;
-data sc_1;
-	input time_1 event_1;
-	datalines;
-	0 0;
-run;
+%ColonyUpdate
 
+proc print;
+run;
