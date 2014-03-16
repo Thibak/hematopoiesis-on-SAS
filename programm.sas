@@ -14,7 +14,7 @@
 	*value event_f 0 = "инициализация" 1 = "деление" 2 = "смерть";
 *-------------------------;
 
-%macro EventSelector(n=1);
+%macro EventSelector(n);
 	data events;
 		set coef_&n;
 	   t = rand('WEIB',a1,b1); ev = 1; output;
@@ -36,7 +36,9 @@
 
 
 
-%macro ColonyUpdate(n=1);
+%macro ColonyUpdate(n);
+	%EventSelector(&n);
+
 	data vec_&n;
 		set vec_&n;
 		call symput('CellNumber', N);
@@ -57,10 +59,11 @@
 						time_&i = .;
 					end;
 				otherwise;
+			end;
+				put "point";
 	/*---------*/
 			if event_&i in (0,1) then 
 				do; 
-					CALL execute ('EventSelector(&n)');
 					event_&i = &CEvent;
 					time_&i = &CTime;
 				end;
@@ -98,7 +101,15 @@ data vec_1;
 	;
 run;
 
-%ColonyUpdate
+data colony_1;
+run;
+
+%ColonyUpdate(1);
 
 proc print;
+run;
+
+data _null_;
+put "&CTime";
+put "&CEvent";
 run;
