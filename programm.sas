@@ -37,12 +37,19 @@
 
 
 %macro ColonyUpdate(n);
-	%EventSelector(&n);
+
+*	%EventSelector(&n);
 
 	data vec_&n;
 		set vec_&n;
 		call symput('CellNumber', N);
+		put "<--------&CellNumber-------->";
+		/*резюме: не работает нижеследующий цикл. Можно попробовать его вынести. 
+		Сразу понятно, что генератор случайных событий отрабатывается один раз
+		В принципе, нам совершенно нет необходимости выполнять это на одном дата-шаге. 
+		Самое главное */
 		%do i = 1 %to &CellNumber;
+		put "+++++++++++++++++++++++++++++";
 			select (event_&i);
 				when (0); *инициализация;
 				when (1) 
@@ -64,8 +71,10 @@
 	/*---------*/
 			if event_&i in (0,1) then 
 				do; 
+					CALL execute ('%EventSelector(&n)');
 					event_&i = &CEvent;
 					time_&i = &CTime;
+					a_&i = "p";
 				end;
 		%end;
 	run;
@@ -90,7 +99,7 @@ run;
 data coef_1;
 	input a1-a4 b1-b4;
 	datalines;
-	0.21 0.22 0.23 0.24 2.0 2.1 2.2 2.3
+	0.21 0.22 0.1 0.24 2.0 2.1 2.2 2.3
 	; 
 run;
 
@@ -105,11 +114,30 @@ data colony_1;
 run;
 
 %ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+%ColonyUpdate(1);
+
+
+
 
 proc print;
 run;
 
-data _null_;
-put "&CTime";
-put "&CEvent";
-run;
