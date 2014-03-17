@@ -42,46 +42,61 @@
 
 	data vec_&n;
 		set vec_&n;
-		call symput('CellNumber', N);
-		put "<--------&CellNumber-------->";
+			call symput('CellNumber', N);
+	run; 
+%let k = 1; *количество клеток, созданных на этом этапе;
+%do i = 1 %to &CellNumber;
+	%EventSelector(&n); *генерируем новое событие. ќно может и не понадобитьс€...;
+	data vec_&n;
+		set vec_&n;
 		/*резюме: не работает нижеследующий цикл. ћожно попробовать его вынести. 
 		—разу пон€тно, что генератор случайных событий отрабатываетс€ один раз
 		¬ принципе, нам совершенно нет необходимости выполн€ть это на одном дата-шаге. 
-		—амое главное */
-		%do i = 1 %to &CellNumber;
-		put "+++++++++++++++++++++++++++++";
+		—амое главное
+	сделал.
+		*/
+put "------------------&i--------------------";
 			select (event_&i);
-				when (0); *инициализаци€;
+				when (0) put "------------------&i-------------------- when (0)"; *инициализаци€;
 				when (1) 
 					do; *деление;
-						cell_%eval(&i+1) = 1;
-						time_%eval(&i+1) = 0; 
-						event_%eval(&i+1) = 0; *создаем новую клетку;
+						put "------------------&i-------------------- when (1)";
+						cell_%eval(&CellNumber+&k) = 1;
+						time_%eval(&CellNumber+&k) = 0; 
+						event_%eval(&CellNumber+&k) = 0; *создаем новую клетку;
+						%let k = %eval(&k+1);
+						div_%eval(&CellNumber+&k) = %eval(&CellNumber+&k);
 						N = N+1;
 					end;
 				when (2) 
 					do; *смерть;
+					put "------------------&i-------------------- when (2)";
 						cell_&i = .;
 						event_&i = .;
 						time_&i = .;
+						death_&i = &i;
 					end;
-				otherwise;
+				otherwise put "------------------&i-------------------- when otherwise";
 			end;
 				put "point";
 	/*---------*/
 			if event_&i in (0,1) then 
 				do; 
-					CALL execute ('%EventSelector(&n)');
 					event_&i = &CEvent;
 					time_&i = &CTime;
-					a_&i = "p";
 				end;
-		%end;
+		
 	run;
 
+	proc print;
+	run;
+%end;
 	*ѕрисоедин€ем полученный вектор;
 	data colony_&n;
 		set colony_&n vec_&n;
+	run;
+
+	proc print;
 	run;
 %mend;
 
@@ -111,6 +126,7 @@ data vec_1;
 run;
 
 data colony_1;
+	set vec_1;
 run;
 
 %ColonyUpdate(1);
