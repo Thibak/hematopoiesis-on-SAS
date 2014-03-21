@@ -1,6 +1,5 @@
-
-
-
+*не работают макросы. Но оказывается существует более простой способ. Циклы на шаге дата!!;
+*пробуем-с перепилить;
 
 %let CellNumber = 1;
 %let CTime = 0;
@@ -13,6 +12,8 @@
 * event_i -- Идентификатор события;
 	*value event_f 0 = "инициализация" 1 = "деление" 2 = "смерть";
 *-------------------------;
+
+
 
 %macro EventSelector(n);
 	data events;
@@ -136,29 +137,57 @@ data colony_1;
 	set vec_1;
 run;
 
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
-%ColonyUpdate(1);
 
-%ColonyUpdate(1);
+%let N = 1000;
 
-%ColonyUpdate(1);
+data colony;
+	array  cell[&N];
+	array  time[&N];
+	array event[&N];
 
-%ColonyUpdate(1);
+	array  cell_t[&N] _temporary_ (0); *Используем как ретейн;
+	array  time_t[&N] _temporary_ (0);
+	array event_t[&N] _temporary_ (0);
+	retain Ntmp; 
 
-%ColonyUpdate(1);
+	cell_i = 0;
+	cell_N = cNtmp
+	do while cell_i < cell_N;
+		cell_i+1;
+		%EventSelector(1); *генерируем новое событие. Оно может и не понадобиться...;
+/**/
+		select (event_t[cell_i]);
+				when (0) put "------------------&i-------------------- when (0)";
+				*инициализация;
+				when (1) 
+					do;
+					*деление;
+						call symput ('k',%eval(&k+1)); *<------ по ходу отчего-то это выполняется не смотря на то, что клетка мертва.;
+						*есть подозрение, что макро выполняется независимо от содержания датасета... т.е. независимо от селекта. Можно попробовать symput же.!;
+						put "-----%eval(&CellNumber+&k)-------------&i-------------------- when (1)";
+						cell_%eval(&CellNumber+&k) = 1;
+						time_%eval(&CellNumber+&k) = 0; 
+						event_%eval(&CellNumber+&k) = 0; *создаем новую клетку;
+						parent_%eval(&CellNumber+&k) = &i;
+						div_%eval(&CellNumber+&k) = %eval(&CellNumber+&k);
+						cNtmp+1;
+					end;
+				when (2) 
+					do; 
+					*смерть;
+					put "------------------&i-------------------- when (2)";
+						cell_&i = .;
+						event_&i = .;
+						time_&i = .;
+						death_&i = &i;
+					end;
+				otherwise put "------------------&i-------------------- when otherwise";
+			end;
+	/**/
+	end;
 
-%ColonyUpdate(1);
-
-%ColonyUpdate(1);
-
-
+	output;
+run;
 
 
 proc print;
