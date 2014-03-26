@@ -18,7 +18,7 @@ run;
 
 
 
-%let N = 10;
+%let N = 100;
 
 data colony;
 	set coef_1;
@@ -32,27 +32,17 @@ data colony;
 	array cur_ev[2];
 	cell_N = 1;
 	newCell = 0;
+	ColonyStatus = 0;
 
 	do i = 1 to &N; *итератор записей (т.е. циклов делени€);
 		cell_N + newCell; *прибавл€ем новые клетки из предыдущей итерации;
 		if cell_N > &N then leave;
 		newCell = 0; *обнул€ем счетчик новых клеток;
-		*put cell_N '<=====================';
 		do cell_i = 1 to cell_N; *пробегаем по всем клеткам;
-		
-							/*вот тут мы имеем реальную проблему св€занную с тем, 
-							что вызов реально происходит только по завершению текущего датастепа,
-							реального прерывани€ не происходит
-							надо посоветоватьс€ с аксакалами на счет того, как бы лучше организовать селектор событи€.
-							≈сть подозрени€, что экзекьют в основном предназначен не дл€ получени€ данных, а дл€ их занесени€
-							ћожно не запускать макрос, а пр€мо в теле сделать селектор через временный массив. 
-							¬опрос как хранить пары.... ’от€ пары нормально в двухмерном векторе хран€тс€.
-							*/
 			*селектор событи€;
 			do ev = 1 to DIM(cur_ev);
 				cur_ev[ev] = rand('WEIB',a[ev],b[ev]); 
 			end;
-		
 			do ev = 1 to DIM(cur_ev);
 	         	if cur_ev[ev] = max(of cur_ev[*]) 
 	            then do;
@@ -61,7 +51,6 @@ data colony;
 	         	 	leave;
 	     		end; 
 			end;
-
 			/*----------------*/
 
 			select (event[cell_i]);
@@ -79,7 +68,6 @@ data colony;
 					when (2) 
 						do; 
 						*смерть;
-						
 							cell[cell_i] = .;
 							event[cell_i] = .;
 							time[cell_i] = .;
@@ -94,7 +82,14 @@ data colony;
 					time[cell_i] = max(of cur_ev[*]) ;
 				end;
 		end;
-	output;
+		
+		if max(of cell[*]) = . then ColonyStatus = 1;
+		if ColonyStatus = 1 then 
+			do;
+				output;
+				leave;
+			end;
+			else output;
 	end;
 run;
 
