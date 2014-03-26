@@ -7,8 +7,6 @@ run;
 
 *----- подготовка данных -----;
 
-
-
 data coef_1;
 	array a[*] a1-a4;
 	array b[*] b1-b4;
@@ -74,7 +72,7 @@ data colony;
 						*деление;
 							newCell+1;
 							if cell_N+newCell > &N then leave;
-							cell[cell_N+newCell]  = 1;  *<-- тут переполнение массива при делении клеток. Обращаемся к несуществующим ячейкам;
+							cell[cell_N+newCell]  = 1;  
 							time[cell_N+newCell]  = 0; 
 							event[cell_N+newCell] = 0; *создаем новую клетку;
 						end;
@@ -86,11 +84,12 @@ data colony;
 							event[cell_i] = .;
 							time[cell_i] = .;
 						end;
-					otherwise 
+					otherwise;
 				end;
 			*генерим новое событие, если клетка не мертва;
 			if event[cell_i] in (0,1) then
 				do; 
+					cell[cell_i]  = 1;
 					event[cell_i] = eventIndx;
 					time[cell_i] = max(of cur_ev[*]) ;
 				end;
