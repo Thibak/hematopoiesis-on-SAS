@@ -16,9 +16,16 @@ data coef_1;
 	; 
 run;
 
+*датасет-болванка для правильной обработки первого вызова;
+/*data newCells;*/
+/*run;*/
+/*%let cells = 0;*/
+
 
 
 %let N = 100;
+%let cells = %eval(&cells+1);
+%let newCell = newCell&cells;
 
 data colony;
 	set coef_1;
@@ -27,17 +34,19 @@ data colony;
 
 	array  cell[&N] (0);
 	array  time[&N] (0);
+	array  CumTime[&N] (0);
 	array event[&N] (0);
 
 	array cur_ev[2];
-	cell_N = 1;
-	newCell = 0;
+	cell_N = 1; *к концу будем иметь тут суммарное количество клеток;
+	&newCell = 0;
 	ColonyStatus = 0;
+	dummy = .; *заглушка для отбора последней записи;
 
 	do i = 1 to &N; *итератор записей (т.е. циклов деления);
-		cell_N + newCell; *прибавляем новые клетки из предыдущей итерации;
+		cell_N + &newCell; *прибавляем новые клетки из предыдущей итерации;
 		if cell_N > &N then leave;
-		newCell = 0; *обнуляем счетчик новых клеток;
+		&newCell = 0; *обнуляем счетчик новых клеток;
 		do cell_i = 1 to cell_N; *пробегаем по всем клеткам;
 			*селектор события;
 			do ev = 1 to DIM(cur_ev);
@@ -59,11 +68,11 @@ data colony;
 					when (1) 
 						do;
 						*деление;
-							newCell+1;
-							if cell_N+newCell > &N then leave;
-							cell[cell_N+newCell]  = 1;  
-							time[cell_N+newCell]  = 0; 
-							event[cell_N+newCell] = 0; *создаем новую клетку;
+							&newCell+1;
+							if cell_N+&newCell > &N then leave;
+							cell[cell_N+&newCell]  = 1;  
+							time[cell_N+&newCell]  = 0; 
+							event[cell_N+&newCell] = 0; *создаем новую клетку;
 						end;
 					when (2) 
 						do; 
@@ -80,6 +89,7 @@ data colony;
 					cell[cell_i]  = 1;
 					event[cell_i] = eventIndx;
 					time[cell_i] = max(of cur_ev[*]) ;
+					CumTime[cell_i] + time[cell_i];
 				end;
 		end;
 		
@@ -91,9 +101,29 @@ data colony;
 			end;
 			else output;
 	end;
+
 run;
 
 
-proc print;
+data tmpStatVector (keep = cell_N);
+	*Вытаскиваем из последней записи ;
+	set colony;
+	if last.dummy;
 run;
 
+*прицепляем динамику изменения состава популяции новым столбцом ;
+
+data tmp;
+	set colony (keep = &newCell);
+run;
+
+data newCells;
+	merge newCells tmp;
+run;
+
+
+proc print data = tmp;
+run;
+
+proc print data = newCells;
+run;
