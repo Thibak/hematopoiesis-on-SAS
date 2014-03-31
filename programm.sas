@@ -45,6 +45,7 @@ data colony;
 
 	do i = 1 to &N; *итератор записей (т.е. циклов деления);
 		cell_N + &newCell; *прибавляем новые клетки из предыдущей итерации;
+		*Счетчики новых клеток и кумулятивно-клеток;
 		if cell_N > &N then leave;
 		&newCell = 0; *обнуляем счетчик новых клеток;
 		do cell_i = 1 to cell_N; *пробегаем по всем клеткам;
@@ -53,7 +54,7 @@ data colony;
 				cur_ev[ev] = rand('WEIB',a[ev],b[ev]); 
 			end;
 			do ev = 1 to DIM(cur_ev);
-	         	if cur_ev[ev] = max(of cur_ev[*]) 
+	         	if cur_ev[ev] = min(of cur_ev[*]) 
 	            then do;
 	          		eventIndx=ev; *мне нужен индекс для определения события;
 	          		*MaxValueVar=vname(cur_ev(i));
@@ -88,16 +89,21 @@ data colony;
 				do; 
 					cell[cell_i]  = 1;
 					event[cell_i] = eventIndx;
-					time[cell_i] = max(of cur_ev[*]) ;
+					time[cell_i] = min(of cur_ev[*]) ;
 					CumTime[cell_i] + time[cell_i];
 				end;
 		end;
 		
-		if max(of cell[*]) = . then ColonyStatus = 1;
+		/*блок рссчета показателей для вытакивания в конечный вектор-саммари*/
+		CumMaxTime + max(of time[*]); 
+		
+		/**/
+		if max(of cell[*]) = . then ColonyStatus = 1; *индикатор вымирания колонии, если он не достигается, то колония считается экспоненциально разросшийся;
 		if ColonyStatus = 1 then 
 			do;
 				output;
 				leave;
+
 			end;
 			else output;
 	end;
