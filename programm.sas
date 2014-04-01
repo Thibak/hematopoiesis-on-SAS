@@ -1,9 +1,20 @@
 
 
 %macro colonyIt (it);
+	*датасет-болванка дл€ правильной обработки первого вызова;
+	data newCells;
+	run;
+	data result;
+	run;
+	data cell_Ns;
+	run;
+	data liveCellss;
+	run;
+	data cellDeaths;
+	run;
 *------- отсюда итератор --------;
 
-	%let N = 10;
+	%let N = 50;
 
 	%do cells = 1 %to &it; * почему cells итератор абсолютно непон€тно;
 
@@ -84,6 +95,7 @@
 				/*блок рссчета показателей дл€ вытакивани€ в конечный вектор-саммари*/
 				CumMaxTime + max(of time[*]); 
 				&cellDeath = &cell_N - &liveCells;
+				N = &N;
 
 				*  оличество делений = тому, что в следующей строке;
 				*  оличество клеток = &cell_N;
@@ -197,48 +209,46 @@ run;
 
 *----- подготовка данных -----;
 
-data coef_1;
-	array a[*] a1-a4;
-	array b[*] b1-b4;
-	input a[*] b[*];
-	datalines;
-	0.21 0.12 0.5 0.24 2.0 2.1 2.2 2.3
-	; 
-run;
+%macro exp(num, str, begin, end, step);
+*str имеет специальный формат, 3 числа, и одно &var -- итерируемый параметр;
+*например "2 2 &var 2" ;
+	%do var = &begin %to &end %by &step;
+		data coef_1;
+			array a[*] a1-a2;
+			array b[*] b1-b2;
+			input a[*] b[*];
+			datalines;
+			&str
+			; 
+		run;
+		%colonyIt(50);
+*тут выкладываем в датасет;
+	%end;
+	*тут выводим результат работы, например график;
+%mend exp;
 
-*датасет-болванка дл€ правильной обработки первого вызова;
-data newCells;
-run;
-data result;
-run;
-data cell_Ns;
-run;
-data liveCellss;
-run;
-data cellDeaths;
-run;
+/*proc print data = result;*/
+/*run;*/
+
+/*proc means data = result;*/
+/*	var cell_N i CumMaxTime ColonyStatus liveCells;*/
+/*run;*/
 
 
- 
-%colonyIt(20);
+*Ёто реализуетс€ при помощи функции MEAN, в датастепе, куда мы складываем параметры и MEAN а потом кластеризуем!;
+/*proc means data = result;*/
+/*	var N ColonyStatus a1 b1 a2 b2;*/
+/*run;*/
 
-
-proc print data = result;
-run;
-
-proc means data = result;
-	var cell_N i CumMaxTime ColonyStatus liveCells;
-run;
-
-proc print data = newCells;
-run;
-
-proc print data = cell_Ns;
-run;
-
-proc print data = liveCellss;
-run;
-
-proc print data = cellDeaths;
-run;
+/*proc print data = newCells;*/
+/*run;*/
+/**/
+/*proc print data = cell_Ns;*/
+/*run;*/
+/**/
+/*proc print data = liveCellss;*/
+/*run;*/
+/**/
+/*proc print data = cellDeaths;*/
+/*run;*/
 
