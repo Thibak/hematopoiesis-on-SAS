@@ -4,12 +4,13 @@
 *------- отсюда итератор --------;
 
 	%let N = 10;
-	%let cells = 0;
 
-	%do cells = 1 %to &it; 
+	%do cells = 1 %to &it; * почему cells итератор абсолютно непон€тно;
 
 	%let newCell = newCell&cells;
 	%let cell_N = cell_N&cells;
+	%let liveCells = liveCells&cells;
+	%let cellDeath = cellDeath&cells;
 
 		data colony;
 			set coef_1;
@@ -32,7 +33,7 @@
 				*—четчики новых клеток и кумул€тивно-клеток;
 				if &cell_N > &N then leave;
 				&newCell = 0; *обнул€ем счетчик новых клеток;
-				liveCells = 0; * счетчик живых клеток ;
+				&liveCells = 0; * счетчик живых клеток ;
 				do cell_i = 1 to &cell_N; *пробегаем по всем клеткам;
 					*селектор событи€;
 					do ev = 1 to DIM(cur_ev);
@@ -76,12 +77,13 @@
 							event[cell_i] = eventIndx;
 							time[cell_i] = min(of cur_ev[*]) ;
 							CumTime[cell_i] + time[cell_i];
-							liveCells+1;
+							&liveCells+1;
 						end;
 				end;
 				
 				/*блок рссчета показателей дл€ вытакивани€ в конечный вектор-саммари*/
 				CumMaxTime + max(of time[*]); 
+				&cellDeath = &cell_N - &liveCells;
 
 				*  оличество делений = тому, что в следующей строке;
 				*  оличество клеток = &cell_N;
@@ -89,7 +91,7 @@
 				* количество актов делени€ = i ;
 				* »сход (вымирание, экспонента) = ColonyStatus;
 				*  оличество клеток на выходе (живых) = liveCells;
-				*  оличество смертей/выходов -- продукци€ = &cell_N - liveCells  т.е. вычисл€емый параметр;
+				*  оличество смертей/выходов -- продукци€ = cell_N - liveCells  т.е. вычисл€емый параметр;
 				
 				/**/
 				if max(of cell[*]) = . then ColonyStatus = 1; *индикатор вымирани€ колонии, если он не достигаетс€, то колони€ считаетс€ экспоненциально разросшийс€;
@@ -116,6 +118,7 @@
 			by dummy;
 			if last.dummy;
 			cell_N = &cell_N;
+			liveCells = &liveCells;
 		run;
 
 		data result;
@@ -123,7 +126,16 @@
 			cellDeath = cell_N - liveCells;
 		run;
 
-
+/**обработчик горизонтальных векторов дописать;*/
+/*		data tmpStatVector (keep = cell_N i CumMaxTime ColonyStatus liveCells );*/
+/*			*¬ытаскиваем из последней записи ;*/
+/*			set colony;*/
+/*			by dummy;*/
+/*			if last.dummy;*/
+/*			cell_N = &cell_N;*/
+/*			liveCells = &liveCells;*/
+/*		run;*/
+/**------------------------------------------;*/
 		*прицепл€ем динамику изменени€ состава попул€ции новым столбцом ;
 
 		* динамика делени€ ;
@@ -135,13 +147,31 @@
 			merge newCells tmp;
 		run;
 
-
+		* динамика ;
 		data tmp;
 			set colony (keep = &cell_N);
 		run;
 
 		data cell_Ns;
 			merge cell_Ns tmp;
+		run;
+
+		* динамика ;
+		data tmp;
+			set colony (keep = &liveCells);
+		run;
+
+		data liveCellss;
+			merge liveCellss tmp;
+		run;
+
+		* динамика ;
+		data tmp;
+			set colony (keep = &cellDeath);
+		run;
+
+		data cellDeaths;
+			merge cellDeaths tmp;
 		run;
 	%end;
 
@@ -183,6 +213,10 @@ data result;
 run;
 data cell_Ns;
 run;
+data liveCellss;
+run;
+data cellDeaths;
+run;
 
 
  
@@ -200,5 +234,11 @@ proc print data = newCells;
 run;
 
 proc print data = cell_Ns;
+run;
+
+proc print data = liveCellss;
+run;
+
+proc print data = cellDeaths;
 run;
 
