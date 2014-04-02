@@ -1,6 +1,6 @@
 
 
-%macro colonyIt (it);
+%macro colonyIt (it,a1,a2,b1,b2,N);
     *датасет-болванка для правильной обработки первого вызова;
     data newCells;
     run;
@@ -14,7 +14,7 @@
     run;
 *------- отсюда итератор --------;
 
-    %let N = 50;
+    *%let N = &lim;
 
     %do cells = 1 %to &it; * почему cells итератор абсолютно непонятно;
 
@@ -24,9 +24,6 @@
     %let cellDeath = cellDeath&cells;
 
         data colony;
-            set coef_1;
-            array a[*] a1-a4;
-            array b[*] b1-b4;
 
             array  cell[&N] (0);
             array  time[&N] (0);
@@ -47,9 +44,10 @@
                 &liveCells = 0; * счетчик живых клеток ;
                 do cell_i = 1 to &cell_N; *пробегаем по всем клеткам;
                     *селектор события;
-                    do ev = 1 to DIM(cur_ev);
-                        cur_ev[ev] = rand('WEIB',a[ev],b[ev]);
-                    end;
+                  
+                    cur_ev[1] = rand('WEIB',&a1,&b1);
+                    cur_ev[2] = rand('WEIB',&a2,&b2);
+
                     do ev = 1 to DIM(cur_ev);
                         if cur_ev[ev] = min(of cur_ev[*])
                         then do;
@@ -211,22 +209,30 @@ run;
 
 
 
-data coef_1;
+data coef;
 	array a[*] a1-a2;
 	array b[*] b1-b2;
+	N = 10;
+	limit = 100;
 	input a[*] b[*];
 	datalines;
-	1 1 1 1
+	1 1 1 1.0 
+	1 1 1 1.1 
+	1 1 1 1.2 
+	1 1 1 1.3 
 	;
+
 run;
 
 *концепция обработчика: формируем датасет с "планом" эксперимента, а потом запускаем по нему скрипт. ;
 *другой вариант, передавать коефициенты напрямую в скрипт в виде макропеременных, а не через датасет coef;
 
-  %colonyIt(10);
-
-
-
+ * %colonyIt(10);
+%let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+data _null_;
+	set coef;
+	call execute("%colonyIt(&iteration,"||a1||","||a2||","||b1||","||b2||","||limit||")");
+run;
 /*proc print data = result;*/
 /*run;*/
 
