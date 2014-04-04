@@ -14,8 +14,6 @@
     run;
 *------- отсюда итератор --------;
 
-    *%let N = &lim;
-
     %do cells = 1 %to &it; * почему cells итератор абсолютно непонятно;
 
     %let newCell = newCell&cells;
@@ -184,8 +182,23 @@
             merge cellDeaths tmp;
         run;
     %end;
+	    *----- конец итератора -----;
 	*тут будет обработчик и складификатор итоговой статистики по запуску, средние показатели, хотя бы по вероятности исхода;
-        *----- конец итератора -----;
+	*data FinalResult;
+	proc means data = result;
+		output out = CurMeanRes  mean(ColonyStatus) = meanRes;
+	run;
+
+	data ExpRes;
+		set ExpRes CurMeanRes;
+		if (a1=.)or(a2=.)or(b1=.)or(b2=.) then 
+			do;
+				a1=&a1;
+				a2=&a2;
+				b1=&b1;
+				b2=&b2;
+			end;
+	run;
 %mend colonyIt;
 
 
@@ -212,8 +225,8 @@ run;
 data coef;
 	array a[*] a1-a2 (1 1);
 	array b[*] b1-b2 (1 1);
-	N = 10;
-	limit = 100;
+
+	limit = 10;
 
 	do a1 = 0 to 2 by .2;
 		output;
@@ -245,15 +258,23 @@ run;
 
 *концепция обработчика: формируем датасет с "планом" эксперимента, а потом запускаем по нему скрипт. ;
 *другой вариант, передавать коефициенты напрямую в скрипт в виде макропеременных, а не через датасет coef;
-
+	data ExpRes;
+	run;
 
 %let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute("%colonyIt(&iteration,"||a1||","||a2||","||b1||","||b2||","||limit||")");
-	*%colonyIt(10);
-	*тут должен стоять обработчик статистики;
+	
 run;
+
+*тут должен стоять обработчик статистики;
+proc print data = ExpRes;
+run;
+
+
+/*%colonyIt(10,1,1,1,1,10);*/
+
 /*proc print data = result;*/
 /*run;*/
 
@@ -277,3 +298,21 @@ run;
 /*proc print data = cellDeaths;*/
 /*run;*/
 
+*о том, как работает получение данных для анализа:;
+/**/
+/*data a;*/
+/*	v1 = 10;*/
+/*	do i = 1 to 2 by .1;*/
+/*		v2 = 1;*/
+/*		output;*/
+/*	end;*/
+/*run;*/
+/**/
+/*proc means data = a;*/
+/*	output out = b  mean(i) = f;*/
+/*run;*/
+/**/
+/*proc print data = a;*/
+/*run;*/
+/*proc print data = b;*/
+/*run;*/
