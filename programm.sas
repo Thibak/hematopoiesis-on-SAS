@@ -46,6 +46,9 @@ options nosource nonotes;
                     cur_ev[1] = rand('WEIB',&a1,&b1);
                     cur_ev[2] = rand('WEIB',&a2,&b2);
 
+					*a is a numeric shape parameter.;
+					*b is a numeric scale parameter.;
+
                     do ev = 1 to DIM(cur_ev);
                         if cur_ev[ev] = min(of cur_ev[*])
                         then do;
@@ -241,8 +244,10 @@ data coef;
 /*	end;*/
 /*	a2 = 1;*/
 
-	do b2 = .1 to 10 by .1;
-		output;
+	do b1 = .1 to 1 by .1;
+		do b2 = .1 to 1 by .1;
+			output;
+		end;
 	end;
 /*	b1 = 1;*/
 
@@ -265,7 +270,7 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 20; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||')');
@@ -284,6 +289,28 @@ proc gplot data=ExpRes;
 * haxis=45 to 155 by 10;
 run;
 quit;
+
+
+*https://support.sas.com/documentation/cdl/en/statug/63033/HTML/default/viewer.htm#statug_nlin_sect036.htm;
+************* Почитать тут о линейной интерполяции. Графики для конкретных распределений вероятностей по параметрам ***************;
+
+*** Добавить фазовую диаграмму (почти) отношения масштабных параметров ур-ий Вейбулла (при k=1) -- линии уровня ***;
+*http://support.sas.com/kb/25/524.html;
+/**/
+proc g3grid data=ExpRes out=ExpRes3D;
+   grid b1*b2 = meanRes / spline; *join;
+run;
+
+ /* Add a title to the graph */
+/*title1 'Clay Content at Site A';*/
+
+ /* Create the contour graph */
+proc gcontour data=ExpRes3D;
+/*   format pct_clay 2.0;*/
+   plot b1*b2 = meanRes;
+run;
+quit;
+
 
 
 /*%colonyIt(10,1,1,1,1,10);*/
