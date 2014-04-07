@@ -1,4 +1,4 @@
-
+options nosource nonotes;
 
 %macro colonyIt (it,a1,a2,b1,b2,N);
     *датасет-болванка для правильной обработки первого вызова;
@@ -199,6 +199,9 @@
 				b2=&b2;
 			end;
 	run;
+
+/*	proc print data = ExpRes;*/
+/*	run;*/
 %mend colonyIt;
 
 
@@ -228,25 +231,26 @@ data coef;
 
 	limit = 10;
 
-	do a1 = 0 to 2 by .2;
-		output;
-	end;
-	a1 = 1;
+/*	do a1 = 0 to 2 by .2;*/
+/*		output;*/
+/*	end;*/
+/*	a1 = 1;*/
+/**/
+/*	do a2 = 0 to 2 by .2;*/
+/*		output;*/
+/*	end;*/
+/*	a2 = 1;*/
 
-	do a2 = 0 to 2 by .2;
-		output;
-	end;
-	a2 = 1;
-
-	do b1 = 0 to 2 by .2;
+	do b1 = .1 to 5 by .1;
 		output;
 	end;
 	b1 = 1;
 
-	do b2 = 0 to 2 by .2;
+	do b2 = .1 to 5 by .1;
 		output;
 	end;
 	b2 = 1;
+
 /*	input a[*] b[*];*/
 /*	datalines;*/
 /*	1 1 1 1.0 */
@@ -264,8 +268,7 @@ run;
 %let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
-	call execute("%colonyIt(&iteration,"||a1||","||a2||","||b1||","||b2||","||limit||")");
-	
+	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||')');
 run;
 
 *тут должен стоять обработчик статистики;
