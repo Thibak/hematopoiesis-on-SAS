@@ -185,7 +185,7 @@ options nosource nonotes;
 	    *----- конец итератора -----;
 	*тут будет обработчик и складификатор итоговой статистики по запуску, средние показатели, хотя бы по вероятности исхода;
 	*data FinalResult;
-	proc means data = result;
+	proc means data = result  NOPRINT;
 		output out = CurMeanRes  mean(ColonyStatus) = meanRes;
 	run;
 
@@ -222,7 +222,7 @@ proc format;
 run;
 
 *----- подготовка данных -----;
-
+title1 " ";
 
 
 data coef;
@@ -241,15 +241,15 @@ data coef;
 /*	end;*/
 /*	a2 = 1;*/
 
-	do b1 = .1 to 5 by .1;
+	do b2 = .1 to 10 by .1;
 		output;
 	end;
-	b1 = 1;
+/*	b1 = 1;*/
 
-	do b2 = .1 to 5 by .1;
-		output;
-	end;
-	b2 = 1;
+/*	do b2 = .1 to 5 by .1;*/
+/*		output;*/
+/*	end;*/
+/*	b2 = 1;*/
 
 /*	input a[*] b[*];*/
 /*	datalines;*/
@@ -265,15 +265,25 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 20; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||')');
 run;
 
 *тут должен стоять обработчик статистики;
-proc print data = ExpRes;
+/*proc print data = ExpRes;*/
+/*run;*/
+
+symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         
+/*symbol2 interpol=spline value=trianglefilled color=depk height=2;*/
+/*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/
+
+proc gplot data=ExpRes;
+ plot meanRes*b2 /; 
+* haxis=45 to 155 by 10;
 run;
+quit;
 
 
 /*%colonyIt(10,1,1,1,1,10);*/
