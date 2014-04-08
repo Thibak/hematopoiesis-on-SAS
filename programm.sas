@@ -1,6 +1,6 @@
 options nosource nonotes;
 
-%macro colonyIt (it,a1,a2,b1,b2,N);
+%macro colonyIt (it,a1,a2,b1,b2,N, borderN);
     *датасет-болванка для правильной обработки первого вызова;
     data newCells;
     run;
@@ -23,15 +23,21 @@ options nosource nonotes;
 
         data colony;
 
-            array  cell[&N] (0);
-            array  time[&N] (0);
-            array  CumTime[&N] (0);
-            array  event[&N] (0);
+            array  cell[&N];
+            array  time[&N];
+            array  CumTime[&N];
+            array  event[&N];
+
+			cell[1] = 0;
+            time[1] = 0;
+            CumTime[1] = 0;
+            event[1] = 0;
 
             array cur_ev[2];
             &cell_N = 1; *к концу будем иметь тут суммарное количество клеток;
             &newCell = 0;
-            ColonyStatus = 0;
+            ColonyStatus = 1;
+			brdr = 0;
             dummy = .; *заглушка для отбора последней записи;
 
             do i = 1 to &N; *итератор записей (т.е. циклов деления);
@@ -94,6 +100,7 @@ options nosource nonotes;
                 /*блок рссчета показателей для вытакивания в конечный вектор-саммари*/
                 CumMaxTime + max(of time[*]);
                 &cellDeath = &cell_N - &liveCells;
+				if &cell_N > &borderN then brdr = 1;
                 N = &N;
 
                 * Количество делений = тому, что в следующей строке;
@@ -105,8 +112,8 @@ options nosource nonotes;
                 * Количество смертей/выходов -- продукция = cell_N - liveCells  т.е. вычисляемый параметр;
 
                 /**/
-                if max(of cell[*]) = . then ColonyStatus = 1; *индикатор вымирания колонии, если он не достигается, то колония считается экспоненциально разросшийся;
-                if ColonyStatus = 1 then
+                if max(of cell[*]) = . then ColonyStatus = 0; *индикатор вымирания колонии, если он не достигается, то колония считается экспоненциально разросшийся;
+                if ColonyStatus = 0 then
                     do;
                         output;
                         leave;
@@ -123,7 +130,7 @@ options nosource nonotes;
         run;
 
         * складываем скалярные величины в специальный датасет ;
-        data tmpStatVector (keep = cell_N i CumMaxTime ColonyStatus liveCells );
+        data tmpStatVector (keep = cell_N i CumMaxTime ColonyStatus liveCells brdr);
             *Вытаскиваем из последней записи ;
             set colony;
             by dummy;
@@ -135,6 +142,9 @@ options nosource nonotes;
         data result;
             set result tmpStatVector;
             cellDeath = cell_N - liveCells;
+			LCondPr = .;
+			if brdr = 1 and ColonyStatus = 1 then LCondPr = 1;
+			if brdr = 1 and ColonyStatus = 0 then LCondPr = 0;
         run;
 
 /**обработчик горизонтальных векторов дописать;*/
@@ -189,8 +199,10 @@ options nosource nonotes;
 	*тут будет обработчик и складификатор итоговой статистики по запуску, средние показатели, хотя бы по вероятности исхода;
 	*data FinalResult;
 	proc means data = result  NOPRINT;
-		output out = CurMeanRes  mean(ColonyStatus) = meanRes;
+		output out = CurMeanRes  mean(ColonyStatus LCondPr) = meanRes meanLCondPr;
 	run;
+
+/* добавить среднее количество пересечений бордера	*/
 
 	data ExpRes;
 		set ExpRes CurMeanRes;
@@ -232,7 +244,7 @@ data coef;
 	array a[*] a1-a2 (1 1);
 	array b[*] b1-b2 (1 1);
 
-	limit = 10;
+	limit = 100;
 
 /*	do a1 = 0 to 2 by .2;*/
 /*		output;*/
@@ -244,8 +256,8 @@ data coef;
 /*	end;*/
 /*	a2 = 1;*/
 
-	do b1 = .1 to 1 by .1;
-		do b2 = .1 to 1 by .1;
+	do b1 = 0.01 to 2 by .01;
+		do b2 = 0.01 to 2 by .01;
 			output;
 		end;
 	end;
@@ -270,25 +282,28 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 10; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 100; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
-	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||')');
+	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||', 5)');
 run;
 
 *тут должен стоять обработчик статистики;
 /*proc print data = ExpRes;*/
 /*run;*/
 
+/*data */
+
+
 symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         
 /*symbol2 interpol=spline value=trianglefilled color=depk height=2;*/
 /*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/
 
-proc gplot data=ExpRes;
- plot meanRes*b2 /; 
-* haxis=45 to 155 by 10;
-run;
-quit;
+/*proc gplot data=ExpRes;*/
+/* plot meanRes*b2 /; */
+/** haxis=45 to 155 by 10;*/
+/*run;*/
+/*quit;*/
 
 
 *https://support.sas.com/documentation/cdl/en/statug/63033/HTML/default/viewer.htm#statug_nlin_sect036.htm;
@@ -298,7 +313,7 @@ quit;
 *http://support.sas.com/kb/25/524.html;
 /**/
 proc g3grid data=ExpRes out=ExpRes3D;
-   grid b1*b2 = meanRes / spline; *join;
+   grid b1*b2 = meanRes meanLCondPr/ join; * spline smooth=.05;
 run;
 
  /* Add a title to the graph */
@@ -308,9 +323,16 @@ run;
 proc gcontour data=ExpRes3D;
 /*   format pct_clay 2.0;*/
    plot b1*b2 = meanRes;
+   plot b1*b2 = meanLCondPr;
 run;
 quit;
 
+ /* Generate a surface plot */
+proc g3d data=ExpRes3D;
+	plot b1*b2 = meanRes/ rotate = 250;
+	plot b1*b2 = meanLCondPr/ rotate = 250;
+run;
+quit;
 
 
 /*%colonyIt(10,1,1,1,1,10);*/
@@ -356,3 +378,5 @@ quit;
 /*run;*/
 /*proc print data = b;*/
 /*run;*/
+
+
