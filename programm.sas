@@ -121,12 +121,6 @@ options nosource nonotes;
                     end;
                     else output;
             end;
-
-            label
-                ColonyStatus = статус колонии на выходе
-                liveCells = количество живых клеток в колонии
-            ;
-
         run;
 
         * складываем скал€рные величины в специальный датасет ;
@@ -198,8 +192,11 @@ options nosource nonotes;
 	    *----- конец итератора -----;
 	*тут будет обработчик и складификатор итоговой статистики по запуску, средние показатели, хот€ бы по веро€тности исхода;
 	*data FinalResult;
-	proc means data = result  NOPRINT;
-		output out = CurMeanRes  mean(ColonyStatus LCondPr) = meanRes meanLCondPr;
+	proc means data = result  ; *NOPRINT;
+		output out = CurMeanRes  
+			mean(ColonyStatus LCondPr) = meanRes meanLCondPr 
+			n(ColonyStatus LCondPr) = nRes nLCondPr 
+			STDDEV(ColonyStatus LCondPr) =  stdColonyStatus stdLCondPr;
 	run;
 
 /* добавить среднее количество пересечений бордера	*/
@@ -212,6 +209,7 @@ options nosource nonotes;
 				a2=&a2;
 				b1=&b1;
 				b2=&b2;
+				brdr = &borderN;
 			end;
 	run;
 
@@ -219,8 +217,27 @@ options nosource nonotes;
 /*	run;*/
 %mend colonyIt;
 
+%macro plotSTD(dowhlc, date, mean, std);
+	data dowhlc;
+		set &dowhlc;
+		high = &mean + &std;
+		low = &mean - &std;
+	run;
+	
+	data dowhlc;
+	   set dowhlc;
+	   Dow=high; output;
+	   Dow=low; output;
+	   Dow=&mean; output;
+	run;
 
+	symbol1 interpol=hiloctj;
 
+	proc gplot data=dowhlc;
+	   plot dow*&date /;
+	run;
+	quit;
+%mend;
 *-------------------------------------------------------------------------;
 *-------------------------------------------------------------------------;
 *-------------------------------------------------------------------------;
@@ -245,6 +262,11 @@ data coef;
 	array b[*] b1-b2 (1 1);
 
 	limit = 100;
+/*border = 5 ;*/
+		do border = 29 to 31 by 1;
+			output;
+		end;
+
 
 /*	do a1 = 0 to 2 by .2;*/
 /*		output;*/
@@ -256,11 +278,11 @@ data coef;
 /*	end;*/
 /*	a2 = 1;*/
 
-	do b1 = 0.01 to 2 by .01;
-		do b2 = 0.01 to 2 by .01;
-			output;
-		end;
-	end;
+/*	do b1 = 0.01 to 2 by .1;*/
+/*		do b2 = 0.01 to 2 by .1;*/
+/*			output;*/
+/*		end;*/
+/*	end;*/
 /*	b1 = 1;*/
 
 /*	do b2 = .1 to 5 by .1;*/
@@ -278,105 +300,58 @@ data coef;
 run;
 
 *концепци€ обработчика: формируем датасет с "планом" эксперимента, а потом запускаем по нему скрипт. ;
-*другой вариант, передавать коефициенты напр€мую в скрипт в виде макропеременных, а не через датасет coef;
+
 	data ExpRes;
 	run;
 
-%let iteration = 100; *по причинам пор€дка исполнени€ скрипта нельз€ передавать параметр макроса из датасета;
+%let iteration = 500; *по причинам пор€дка исполнени€ скрипта нельз€ передавать параметр макроса из датасета;
 data _null_;
 	set coef;
-	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||', 5)');
+	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||','||border||')');
 run;
 
-*тут должен сто€ть обработчик статистики;
-/*proc print data = ExpRes;*/
-/*run;*/
-
-/*data */
-
+/*options source notes;*/
 
 symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         
-/*symbol2 interpol=spline value=trianglefilled color=depk height=2;*/
+symbol2 interpol=join value=trianglefilled color=depk height=1;
 /*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/
+legend1 label=none frame;
 
-/*proc gplot data=ExpRes;*/
-/* plot meanRes*b2 /; */
-/** haxis=45 to 155 by 10;*/
-/*run;*/
-/*quit;*/
+
+proc gplot data=ExpRes;
+ plot (meanRes meanLCondPr)*brdr /overlay legend=legend1; 
+* haxis=45 to 155 by 10;
+run;
+quit;
+
+  
+
+%plotSTD(ExpRes, brdr, meanLCondPr, stdLCondPr);
+
 
 
 *https://support.sas.com/documentation/cdl/en/statug/63033/HTML/default/viewer.htm#statug_nlin_sect036.htm;
 ************* ѕочитать тут о линейной интерпол€ции. √рафики дл€ конкретных распределений веро€тностей по параметрам ***************;
 
-*** ƒобавить фазовую диаграмму (почти) отношени€ масштабных параметров ур-ий ¬ейбулла (при k=1) -- линии уровн€ ***;
-*http://support.sas.com/kb/25/524.html;
-/**/
-proc g3grid data=ExpRes out=ExpRes3D;
-   grid b1*b2 = meanRes meanLCondPr/ join; * spline smooth=.05;
-run;
 
- /* Add a title to the graph */
-/*title1 'Clay Content at Site A';*/
-
- /* Create the contour graph */
-proc gcontour data=ExpRes3D;
-/*   format pct_clay 2.0;*/
-   plot b1*b2 = meanRes;
-   plot b1*b2 = meanLCondPr;
-run;
-quit;
-
- /* Generate a surface plot */
-proc g3d data=ExpRes3D;
-	plot b1*b2 = meanRes/ rotate = 250;
-	plot b1*b2 = meanLCondPr/ rotate = 250;
-run;
-quit;
-
-
-/*%colonyIt(10,1,1,1,1,10);*/
-
-/*proc print data = result;*/
-/*run;*/
-
-/*proc means data = result;*/
-/*  var cell_N i CumMaxTime ColonyStatus liveCells;*/
-/*run;*/
-
-/*proc means data = result;*/
-/*  var N ColonyStatus a1 b1 a2 b2;*/
-/*run;*/
-
-/*proc print data = newCells;*/
+/*proc g3grid data=ExpRes out=ExpRes3D;*/
+/*   grid b1*b2 = meanRes meanLCondPr/ join; * spline smooth=.05;*/
 /*run;*/
 /**/
-/*proc print data = cell_Ns;*/
+/*proc gcontour data=ExpRes3D;*/
+/*   plot b1*b2 = meanRes;*/
+/*   plot b1*b2 = meanLCondPr;*/
+/*/overlay*/
 /*run;*/
+/*quit;*/
 /**/
-/*proc print data = liveCellss;*/
-/*run;*/
 /**/
-/*proc print data = cellDeaths;*/
+/*proc g3d data=ExpRes3D;*/
+/*	plot b1*b2 = meanRes/ rotate = 250;*/
+/*	plot b1*b2 = meanLCondPr/ rotate = 140;*/
 /*run;*/
+/*quit;*/
 
-*о том, как работает получение данных дл€ анализа:;
-/**/
-/*data a;*/
-/*	v1 = 10;*/
-/*	do i = 1 to 2 by .1;*/
-/*		v2 = 1;*/
-/*		output;*/
-/*	end;*/
-/*run;*/
-/**/
-/*proc means data = a;*/
-/*	output out = b  mean(i) = f;*/
-/*run;*/
-/**/
-/*proc print data = a;*/
-/*run;*/
-/*proc print data = b;*/
-/*run;*/
+
 
 
