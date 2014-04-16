@@ -196,7 +196,7 @@ options nosource nonotes;
 		output out = CurMeanRes  
 			mean(ColonyStatus LCondPr) = meanRes meanLCondPr 
 			n(ColonyStatus LCondPr) = nRes nLCondPr 
-			STDDEV(ColonyStatus LCondPr) =  stdColonyStatus stdLCondPr;
+			STDERR(ColonyStatus LCondPr) =  stdColonyStatus stdLCondPr;
 	run;
 
 /* добавить среднее количество пересечений бордера	*/
@@ -263,7 +263,7 @@ data coef;
 
 	limit = 100;
 /*border = 5 ;*/
-		do border = 29 to 31 by 1;
+		do border = 0 to 30 by 1;
 			output;
 		end;
 
