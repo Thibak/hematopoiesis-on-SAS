@@ -100,7 +100,8 @@ options nosource nonotes;
                 /*блок рссчета показателей для вытакивания в конечный вектор-саммари*/
                 CumMaxTime + max(of time[*]);
                 &cellDeath = &cell_N - &liveCells;
-				if &cell_N > &borderN then brdr = 1;
+/*				if &cell_N > &borderN then brdr = 1; *индикатор наступления перехода через границу условной вероянтости;*/
+				if &liveCells > &borderN then brdr = 1;
                 N = &N;
 
                 * Количество делений = тому, что в следующей строке;
@@ -137,7 +138,7 @@ options nosource nonotes;
             set result tmpStatVector;
             cellDeath = cell_N - liveCells;
 			LCondPr = .;
-			if brdr = 1 and ColonyStatus = 1 then LCondPr = 1;
+			if brdr = 1 and ColonyStatus = 1 then LCondPr = 1; *если колония перешла через границу и жива, то условная вероятность события;
 			if brdr = 1 and ColonyStatus = 0 then LCondPr = 0;
         run;
 
@@ -192,11 +193,11 @@ options nosource nonotes;
 	    *----- конец итератора -----;
 	*тут будет обработчик и складификатор итоговой статистики по запуску, средние показатели, хотя бы по вероятности исхода;
 	*data FinalResult;
-	proc means data = result  ; *NOPRINT;
+	proc means data = result  NOPRINT; *при необходимости ожно не выводить;
 		output out = CurMeanRes  
 			mean(ColonyStatus LCondPr) = meanRes meanLCondPr 
 			n(ColonyStatus LCondPr) = nRes nLCondPr 
-			STDERR(ColonyStatus LCondPr) =  stdColonyStatus stdLCondPr;
+			STD(ColonyStatus LCondPr) =  stdColonyStatus stdLCondPr;
 	run;
 
 /* добавить среднее количество пересечений бордера	*/
@@ -263,7 +264,7 @@ data coef;
 
 	limit = 100;
 /*border = 5 ;*/
-		do border = 0 to 30 by 1;
+		do border = 0 to 15 by 1;
 			output;
 		end;
 
@@ -304,7 +305,7 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 500; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 1000; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||','||border||')');
@@ -326,7 +327,7 @@ quit;
 
   
 
-%plotSTD(ExpRes, brdr, meanLCondPr, stdLCondPr);
+/*%plotSTD(ExpRes, brdr, meanLCondPr, stdLCondPr);*/
 
 
 
