@@ -12,6 +12,8 @@ options nosource nonotes;
     run;
     data cellDeaths;
     run;
+	data tracks;
+	run;
 *------- отсюда итератор --------;
 
     %do cells = 1 %to &it; * почему cells итератор абсолютно непонятно;
@@ -124,6 +126,12 @@ options nosource nonotes;
             end;
         run;
 
+		data tracks;
+			merge tracks colony(keep = i &cell_N  &liveCells);
+		run;
+
+
+
         * складываем скалярные величины в специальный датасет ;
         data tmpStatVector (keep = cell_N i CumMaxTime ColonyStatus liveCells brdr);
             *Вытаскиваем из последней записи ;
@@ -216,6 +224,18 @@ options nosource nonotes;
 
 /*	proc print data = ExpRes;*/
 /*	run;*/
+
+*отрисовка траекторий;
+		goption reset=symbol;
+	   symbol interpol=join;
+		proc gplot data=tracks;
+			 plot (%do cells = 1 %to &it;
+			liveCells&cells
+			%end;
+			)*i /overlay;
+		run;
+		quit;
+
 %mend colonyIt;
 
 %macro plotSTD(dowhlc, date, mean, std);
@@ -259,14 +279,14 @@ title1 " ";
 
 
 data coef;
-	array a[*] a1-a2 (1 1);
+	array a[*] a1-a2 (1 2);
 	array b[*] b1-b2 (1 1);
 
-	limit = 100;
-/*border = 5 ;*/
-		do border = 0 to 15 by 1;
-			output;
-		end;
+	limit = 1000;
+border = 5 ;
+/*		do border = 0 to 15 by 1;*/
+/*			output;*/
+/*		end;*/
 
 
 /*	do a1 = 0 to 2 by .2;*/
@@ -305,7 +325,7 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 1000; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 100; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||','||border||')');
@@ -313,17 +333,17 @@ run;
 
 /*options source notes;*/
 
-symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         
-symbol2 interpol=join value=trianglefilled color=depk height=1;
-/*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/
-legend1 label=none frame;
+/*symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         */
+/*symbol2 interpol=join value=trianglefilled color=depk height=1;*/
+/*/*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/*/
+/*legend1 label=none frame;*/
+/**/
 
-
-proc gplot data=ExpRes;
- plot (meanRes meanLCondPr)*brdr /overlay legend=legend1; 
-* haxis=45 to 155 by 10;
-run;
-quit;
+/*proc gplot data=ExpRes;*/
+/* plot (meanRes meanLCondPr)*brdr /overlay legend=legend1; */
+/** haxis=45 to 155 by 10;*/
+/*run;*/
+/*quit;*/
 
   
 
