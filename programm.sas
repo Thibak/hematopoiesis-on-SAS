@@ -226,15 +226,23 @@ options nosource nonotes;
 /*	run;*/
 
 *отрисовка траекторий;
-		goption reset=symbol;
-	   symbol interpol=join;
-		proc gplot data=tracks;
-			 plot (%do cells = 1 %to &it;
-			liveCells&cells
-			%end;
-			)*i /overlay;
-		run;
-		quit;
+/*		goption reset=symbol;*/
+/*	   symbol interpol=join;*/
+/*		proc gplot data=tracks;*/
+/*			 plot (%do cells = 1 %to &it;*/
+/*			liveCells&cells*/
+/*			%end;*/
+/*			)*i /overlay;*/
+/*		run;*/
+/*		quit;*/
+/**/
+/*proc gplot data=tracks;*/
+/*plot (%do cells = 1 %to &it;*/
+/*			Cell_N&cells*/
+/*			%end;*/
+/*			)*i /overlay;*/
+/*		run;*/
+/*		quit;*/
 
 %mend colonyIt;
 
@@ -279,11 +287,14 @@ title1 " ";
 
 
 data coef;
-	array a[*] a1-a2 (1 2);
+	array a[*] a1-a2 (1 1);
 	array b[*] b1-b2 (1 1);
 
-	limit = 1000;
-border = 5 ;
+*a is a numeric shape parameter.;
+*b is a numeric scale parameter.;
+
+	limit = 10000;
+border = 8 ;
 /*		do border = 0 to 15 by 1;*/
 /*			output;*/
 /*		end;*/
@@ -294,19 +305,19 @@ border = 5 ;
 /*	end;*/
 /*	a1 = 1;*/
 /**/
-/*	do a2 = 0 to 2 by .2;*/
+/*	do a2 = 0 to 2 by 1;*/
 /*		output;*/
 /*	end;*/
 /*	a2 = 1;*/
 
-/*	do b1 = 0.01 to 2 by .1;*/
-/*		do b2 = 0.01 to 2 by .1;*/
-/*			output;*/
-/*		end;*/
-/*	end;*/
+	do b1 = 0.01 to 2 by .1;
+		do b2 = 0.01 to 2 by .1;
+			output;
+		end;
+	end;
 /*	b1 = 1;*/
 
-/*	do b2 = .1 to 5 by .1;*/
+/*	do b2 = .01 to 2 by .2;*/
 /*		output;*/
 /*	end;*/
 /*	b2 = 1;*/
@@ -325,25 +336,29 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 100; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 500; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||','||border||')');
 run;
 
+
+proc print data=ExpRes;
+run;
+
 /*options source notes;*/
 
-/*symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         */
-/*symbol2 interpol=join value=trianglefilled color=depk height=1;*/
-/*/*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/*/
-/*legend1 label=none frame;*/
-/**/
+symbol1 interpol=join value=diamondfilled   color=vibg height=1;                                                                         
+symbol2 interpol=join value=trianglefilled color=depk height=1;
+/*symbol3 interpol=join value=diamondfilled  color=mob  height=2;*/
+legend1 label=none frame;
 
-/*proc gplot data=ExpRes;*/
-/* plot (meanRes meanLCondPr)*brdr /overlay legend=legend1; */
-/** haxis=45 to 155 by 10;*/
-/*run;*/
-/*quit;*/
+
+proc gplot data=ExpRes;
+ plot (meanRes meanLCondPr)*brdr /overlay legend=legend1; 
+* haxis=45 to 155 by 10;
+run;
+quit;
 
   
 
@@ -355,23 +370,22 @@ run;
 ************* Почитать тут о линейной интерполяции. Графики для конкретных распределений вероятностей по параметрам ***************;
 
 
-/*proc g3grid data=ExpRes out=ExpRes3D;*/
-/*   grid b1*b2 = meanRes meanLCondPr/ join; * spline smooth=.05;*/
-/*run;*/
-/**/
-/*proc gcontour data=ExpRes3D;*/
-/*   plot b1*b2 = meanRes;*/
-/*   plot b1*b2 = meanLCondPr;*/
-/*/overlay*/
-/*run;*/
-/*quit;*/
-/**/
-/**/
-/*proc g3d data=ExpRes3D;*/
-/*	plot b1*b2 = meanRes/ rotate = 250;*/
-/*	plot b1*b2 = meanLCondPr/ rotate = 140;*/
-/*run;*/
-/*quit;*/
+proc g3grid data=ExpRes out=ExpRes3D;
+   grid b1*b2 = meanRes meanLCondPr/ join; * spline smooth=.05;
+run;
+
+proc gcontour data=ExpRes3D;
+   plot b1*b2 = meanRes;
+   plot b1*b2 = meanLCondPr;
+run;
+quit;
+
+
+proc g3d data=ExpRes3D;
+	plot b1*b2 = meanRes/ rotate = 200;
+	plot b1*b2 = meanLCondPr/ rotate = 200;
+run;
+quit;
 
 
 
