@@ -294,10 +294,10 @@ data coef;
 *b is a numeric scale parameter.;
 
 	limit = 10000;
-border = 8 ;
-/*		do border = 0 to 15 by 1;*/
-/*			output;*/
-/*		end;*/
+/*border = 8 ;*/
+		do border = 0 to 3 by 1;
+			output;
+		end;
 
 
 /*	do a1 = 0 to 2 by .2;*/
@@ -310,11 +310,11 @@ border = 8 ;
 /*	end;*/
 /*	a2 = 1;*/
 
-	do b1 = 0.01 to 2 by .1;
-		do b2 = 0.01 to 2 by .1;
-			output;
-		end;
-	end;
+/*	do b1 = 0.01 to 1 by .1;*/
+/*		do b2 = 0.01 to 1 by .1;*/
+/*			output;*/
+/*		end;*/
+/*	end;*/
 /*	b1 = 1;*/
 
 /*	do b2 = .01 to 2 by .2;*/
@@ -336,7 +336,7 @@ run;
 	data ExpRes;
 	run;
 
-%let iteration = 500; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
+%let iteration = 1000; *по причинам порядка исполнения скрипта нельзя передавать параметр макроса из датасета;
 data _null_;
 	set coef;
 	call execute('%colonyIt(&iteration,'||a1||','||a2||','||b1||','||b2||','||limit||','||border||')');
